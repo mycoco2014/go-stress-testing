@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/link1st/go-stress-testing/model"
 	"github.com/link1st/go-stress-testing/server/client"
@@ -17,23 +18,50 @@ func HTTP(ctx context.Context, chanID uint64, ch chan<- *model.RequestResults, t
 	defer func() {
 		wg.Done()
 	}()
-	// fmt.Printf("启动协程 编号:%05d \n", chanID)
-	for i := uint64(0); i < totalNumber; i++ {
-		if ctx.Err() != nil {
-			fmt.Printf("ctx.Err err: %v \n", ctx.Err())
-			break
-		}
 
-		list := getRequestList(request)
-		isSucceed, errCode, requestTime, contentLength := sendList(chanID, list)
-		requestResults := &model.RequestResults{
-			Time:          requestTime,
-			IsSucceed:     isSucceed,
-			ErrCode:       errCode,
-			ReceivedBytes: contentLength,
+	if totalNumber == 0 {
+		for {
+			fillTotal := cap(ch) - len(ch)
+			for i := 0; i < fillTotal; i++ {
+				if ctx.Err() != nil {
+					fmt.Printf("ctx.Err err: %v \n", ctx.Err())
+					return
+				}
+	
+				list := getRequestList(request)
+				isSucceed, errCode, requestTime, contentLength := sendList(chanID, list)
+				requestResults := &model.RequestResults{
+					Time:          requestTime,
+					IsSucceed:     isSucceed,
+					ErrCode:       errCode,
+					ReceivedBytes: contentLength,
+				}
+				requestResults.SetID(chanID, uint64(i))
+				ch <- requestResults
+			}
+			if fillTotal < 10 {
+				time.Sleep(3 * time.Second)
+			}
 		}
-		requestResults.SetID(chanID, i)
-		ch <- requestResults
+	} else {
+		// fmt.Printf("启动协程 编号:%05d \n", chanID)
+		for i := uint64(0); i < totalNumber; i++ {
+			if ctx.Err() != nil {
+				fmt.Printf("ctx.Err err: %v \n", ctx.Err())
+				break
+			}
+
+			list := getRequestList(request)
+			isSucceed, errCode, requestTime, contentLength := sendList(chanID, list)
+			requestResults := &model.RequestResults{
+				Time:          requestTime,
+				IsSucceed:     isSucceed,
+				ErrCode:       errCode,
+				ReceivedBytes: contentLength,
+			}
+			requestResults.SetID(chanID, i)
+			ch <- requestResults
+		}
 	}
 
 	return

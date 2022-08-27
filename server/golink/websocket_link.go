@@ -44,13 +44,20 @@ func WebSocket(ctx context.Context, chanID uint64, ch chan<- *model.RequestResul
 	for {
 		select {
 		case <-t.C:
+			if ctx.Err() != nil {
+				fmt.Printf("ctx.Err err: %v \n", ctx.Err())
+				return
+			}
 			t.Reset(intervalTime)
 			// 请求
 			webSocketRequest(chanID, ch, i, request, ws)
-			// 结束条件
-			i = i + 1
-			if i >= totalNumber {
-				goto end
+
+			if totalNumber > 0 {
+				// 结束条件
+				i = i + 1
+				if i >= totalNumber {
+					goto end
+				}
 			}
 		}
 	}

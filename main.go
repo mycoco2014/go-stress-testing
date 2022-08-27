@@ -47,7 +47,7 @@ var (
 
 func init() {
 	flag.Uint64Var(&concurrency, "c", concurrency, "并发数")
-	flag.Uint64Var(&totalNumber, "n", totalNumber, "请求数(单个并发/协程)")
+	flag.Uint64Var(&totalNumber, "n", totalNumber, "请求数(单个并发/协程)  / 0 持续请求")
 	flag.StringVar(&debugStr, "d", debugStr, "调试模式")
 	flag.StringVar(&requestURL, "u", requestURL, "压测地址")
 	flag.StringVar(&path, "p", path, "curl文件路径")
@@ -70,7 +70,7 @@ func init() {
 //go:generate go build main.go
 func main() {
 	runtime.GOMAXPROCS(cpuNumber)
-	if concurrency == 0 || totalNumber == 0 || (requestURL == "" && path == "") {
+	if requestURL == "" && path == "" {
 		fmt.Printf("示例: go run main.go -c 1 -n 1 -u https://www.baidu.com/ \n")
 		fmt.Printf("压测地址或curl路径必填 \n")
 		fmt.Printf("当前请求参数: -c %d -n %d -d %v -u %s \n", concurrency, totalNumber, debugStr, requestURL)
